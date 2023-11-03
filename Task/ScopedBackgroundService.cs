@@ -1,6 +1,10 @@
 ﻿namespace App.ScopedService;
 using Confluent.Kafka;
+using System.Threading.Channels;
+using TaskMessage.Logic;
 using static Confluent.Kafka.ConfigPropertyNames;
+using TaskMessage.Enum;
+using Channel = TaskMessage.Enum.Channel;
 
 public sealed class DefaultScopedProcessingService : IScopedProcessingService
 {
@@ -33,7 +37,24 @@ public sealed class DefaultScopedProcessingService : IScopedProcessingService
             if (response.Message != null)
             {
                 var message = response.Message.Value;
+                
+                LogicaNotificacion logicaNotificacion = new LogicaNotificacion(message);
+                
+                foreach (Channel i in logicaNotificacion.notificacion.Channels)
+                {
+                    if (i == Channel.Email)
+                    {
+                        Email email = new Email();
+                        email.EnviarCorreo(logicaNotificacion.notificacion.Contacts[0].Mail, logicaNotificacion.notificacion.Templates[0].Subject, logicaNotificacion.notificacion.Templates[0].Body);
+                    }
+                    if (i == Channel.SMS)
+                    {
 
+                    }
+                    if (i == Channel.Whatsapp)
+                    {
+                    }
+                }
                 // meter logica 
             }
         }
