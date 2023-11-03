@@ -27,9 +27,8 @@ namespace TaskMessage.Logic
         {
             var _notificacion = JsonConvert.DeserializeObject<Notification>(cadenaJson);
             notificacion = new Notification();
-            notificacion.Id = _notificacion.Id;
-            notificacion.IsRecurring = _notificacion.IsRecurring;
-            notificacion.InfoRecurrence = _notificacion.InfoRecurrence;
+            notificacion.IsProgrammed = _notificacion.IsProgrammed;
+            notificacion.ProgrammingInfo = _notificacion.ProgrammingInfo;
             notificacion.Channels = _notificacion.Channels;
             notificacion.Contacts= _notificacion.Contacts;
             notificacion.Templates = _notificacion.Templates;
