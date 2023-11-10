@@ -5,7 +5,8 @@ using TaskMessage.Logic;
 using static Confluent.Kafka.ConfigPropertyNames;
 using TaskMessage.Enum;
 using Channel = TaskMessage.Enum.Channel;
-
+using Whatsapp=TaskMessage.Logic.Whatsapp;
+using SMS=TaskMessage.Logic.SMS;
 public sealed class DefaultScopedProcessingService : IScopedProcessingService
 {
     private int _executionCount;
@@ -49,10 +50,13 @@ public sealed class DefaultScopedProcessingService : IScopedProcessingService
                     }
                     if (i == Channel.SMS)
                     {
-
+                        SMS sMS = new SMS();
+                        sMS.EnviarMensaje(logicaNotificacion.notificacion.Contacts[0].Phone + "", logicaNotificacion.notificacion.Templates[0].Body.ToString());
                     }
                     if (i == Channel.Whatsapp)
                     {
+                        Whatsapp whatsapp = new Whatsapp();
+                        whatsapp.EnviarMensaje( logicaNotificacion.notificacion.Contacts[0].Phone+"",  logicaNotificacion.notificacion.Templates[0].Body.ToString());
                     }
                 }
                 // meter logica 
