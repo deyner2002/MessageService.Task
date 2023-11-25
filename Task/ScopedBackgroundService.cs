@@ -46,7 +46,7 @@ public sealed class DefaultScopedProcessingService : IScopedProcessingService
                     if (i == Channel.Email)
                     {
                         Email email = new Email();
-                        email.EnviarCorreo(logicaNotificacion.notificacion.Contacts[0].Mail, logicaNotificacion.notificacion.Templates[0].Subject, logicaNotificacion.notificacion.Templates[0].Body);
+                        email.EnviarCorreo(logicaNotificacion.notificacion.Contacts[0].Mail, logicaNotificacion.notificacion.Templates[0].Subject, logicaNotificacion.notificacion.Templates[0].Body, logicaNotificacion.notificacion.Templates[0].IsHtml);
                     }
                     if (i == Channel.SMS)
                     {

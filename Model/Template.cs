@@ -13,6 +13,7 @@ namespace TaskMessage.Model
         public Channel Channel { get; set; }
         public string Sender { get; set; }
         public string Body { get; set; }
+        public bool IsHtml { get; set; }
         public string Subject { get; set; }
     }
 }

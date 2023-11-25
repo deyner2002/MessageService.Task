@@ -28,7 +28,7 @@ namespace TaskMessage.Logic
                 Credentials = new NetworkCredential(correo, contrasenia)
             };
         }
-        public void EnviarCorreo(string destinatario, string asunto, string mensaje, bool esHtlm = false)
+        public void EnviarCorreo(string destinatario, string asunto, string mensaje, bool esHtlm)
         {
             email = new MailMessage(correo, destinatario, asunto, mensaje);
             email.IsBodyHtml = esHtlm;
