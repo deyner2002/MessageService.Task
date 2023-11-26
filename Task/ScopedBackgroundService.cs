@@ -7,6 +7,11 @@ using TaskMessage.Enum;
 using Channel = TaskMessage.Enum.Channel;
 using Whatsapp=TaskMessage.Logic.Whatsapp;
 using SMS=TaskMessage.Logic.SMS;
+using Newtonsoft.Json;
+using RazorEngineNetCore = RazorEngine;
+using RazorEngine.Templating;
+using Newtonsoft.Json.Linq;
+
 public sealed class DefaultScopedProcessingService : IScopedProcessingService
 {
     private int _executionCount;
@@ -46,6 +51,8 @@ public sealed class DefaultScopedProcessingService : IScopedProcessingService
                     if (i == Channel.Email)
                     {
                         Email email = new Email();
+                        object obj = JsonConvert.DeserializeObject<object>(logicaNotificacion.notificacion.Object);
+                        logicaNotificacion.notificacion.Templates[0].Body = RenderString(new Guid().ToString(), logicaNotificacion.notificacion.Templates[0].Body, obj);
                         email.EnviarCorreo(logicaNotificacion.notificacion.Contacts[0].Mail, logicaNotificacion.notificacion.Templates[0].Subject, logicaNotificacion.notificacion.Templates[0].Body, logicaNotificacion.notificacion.Templates[0].IsHtml);
                     }
                     if (i == Channel.SMS)
@@ -61,6 +68,34 @@ public sealed class DefaultScopedProcessingService : IScopedProcessingService
                 }
                 // meter logica 
             }
+        }
+    }
+
+
+    public string RenderString(string key, string body, object Object )
+    {
+        try
+        {
+            _logger.LogInformation($"Render item with key {key} start");
+
+            if (!RazorEngineNetCore.Engine.Razor.IsTemplateCached(key, null))
+            {
+                RazorEngineNetCore.Engine.Razor.AddTemplate(key, body);
+                RazorEngineNetCore.Engine.Razor.Compile(key);
+            }
+
+            var renderedString = RazorEngineNetCore.Engine.Razor.Run(key, null, Object);
+
+            _logger.LogDebug($"Rendered string: {renderedString}");
+
+            _logger.LogInformation($"Render item with key {key} finish");
+
+            return renderedString;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Render item with key {key} error");
+            throw;
         }
     }
 }

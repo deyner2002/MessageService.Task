@@ -1,15 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Text.Json;
+﻿
 using TaskMessage.Model;
-using System.Threading.Channels;
 using Newtonsoft.Json;
-using TaskMessage.Enum;
-using System.Net.Mail;
-
 
 
 
@@ -32,6 +23,7 @@ namespace TaskMessage.Logic
             notificacion.Channels = _notificacion.Channels;
             notificacion.Contacts= _notificacion.Contacts;
             notificacion.Templates = _notificacion.Templates;
+            notificacion.Object = _notificacion.Object;
             return notificacion;
         }
 
