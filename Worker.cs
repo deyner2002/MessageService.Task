@@ -28,7 +28,7 @@ public sealed class ScopedBackgroundService : BackgroundService
             IScopedProcessingService scopedProcessingService =
                 scope.ServiceProvider.GetRequiredService<IScopedProcessingService>();
 
-            await scopedProcessingService.DoWorkAsync(stoppingToken);
+             scopedProcessingService.DoWorkAsync(stoppingToken);
         }
     }
 

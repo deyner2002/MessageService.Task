@@ -5,28 +5,39 @@ using TaskMessage.Logic;
 using static Confluent.Kafka.ConfigPropertyNames;
 using TaskMessage.Enum;
 using Channel = TaskMessage.Enum.Channel;
-using Whatsapp=TaskMessage.Logic.Whatsapp;
 using SMS=TaskMessage.Logic.SMS;
 using Newtonsoft.Json;
 using RazorEngineNetCore = RazorEngine;
 using RazorEngine.Templating;
 using Newtonsoft.Json.Linq;
+using TaskMessage.Config;
+using Microsoft.Extensions.Options;
+using System.Net.Mail;
+using System.Net;
+using Twilio.Http;
+using Twilio.Types;
+using Twilio;
+using TaskMessage.Model;
+using Twilio.Rest.Api.V2010.Account;
+using Twilio.TwiML.Voice;
 
 public sealed class DefaultScopedProcessingService : IScopedProcessingService
 {
     private int _executionCount;
     private readonly ILogger<DefaultScopedProcessingService> _logger;
     private readonly IConsumer<string, string> _kafkaConsumer;
+    public readonly MessageConfig _messageConfig;
 
     public DefaultScopedProcessingService(
-        ILogger<DefaultScopedProcessingService> logger, IConsumer<string, string> kafkaConsumer)
+        ILogger<DefaultScopedProcessingService> logger, IConsumer<string, string> kafkaConsumer, IOptions<MessageConfig> messageConfig )
     {
         _logger = logger;
         _kafkaConsumer = kafkaConsumer;
+        _messageConfig = messageConfig.Value;
         _kafkaConsumer.Subscribe("test-kafka");
     }
 
-    public async Task DoWorkAsync(CancellationToken stoppingToken)
+    public void DoWorkAsync(CancellationToken stoppingToken)
     {
         CancellationTokenSource token = new();
         bool bandera = true;
@@ -43,17 +54,16 @@ public sealed class DefaultScopedProcessingService : IScopedProcessingService
             if (response.Message != null)
             {
                 var message = response.Message.Value;
-                
+
                 LogicaNotificacion logicaNotificacion = new LogicaNotificacion(message);
-                
+
                 foreach (Channel i in logicaNotificacion.notificacion.Channels)
                 {
                     if (i == Channel.Email)
                     {
-                        Email email = new Email();
                         object obj = JsonConvert.DeserializeObject<object>(logicaNotificacion.notificacion.Object);
-                        logicaNotificacion.notificacion.Templates[0].Body = RenderString(new Guid().ToString(), logicaNotificacion.notificacion.Templates[0].Body, obj);
-                        email.EnviarCorreo(logicaNotificacion.notificacion.Contacts[0].Mail, logicaNotificacion.notificacion.Templates[0].Subject, logicaNotificacion.notificacion.Templates[0].Body, logicaNotificacion.notificacion.Templates[0].IsHtml);
+                        logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Email).Body = RenderString(new Guid().ToString(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Email).Body, obj);
+                        SentEmail(logicaNotificacion.notificacion.Contacts.Where(x => x.Mail != string.Empty).ToList(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Email));
                     }
                     if (i == Channel.SMS)
                     {
@@ -62,11 +72,9 @@ public sealed class DefaultScopedProcessingService : IScopedProcessingService
                     }
                     if (i == Channel.Whatsapp)
                     {
-                        Whatsapp whatsapp = new Whatsapp();
-                        whatsapp.EnviarMensaje( logicaNotificacion.notificacion.Contacts[0].Phone+"",  logicaNotificacion.notificacion.Templates[0].Body.ToString());
+                        SentWhatsapp(logicaNotificacion.notificacion.Contacts.Where(x => x.Phone != string.Empty).ToList(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Whatsapp));
                     }
                 }
-                // meter logica 
             }
         }
     }
@@ -96,6 +104,43 @@ public sealed class DefaultScopedProcessingService : IScopedProcessingService
         {
             _logger.LogError(ex, $"Render item with key {key} error");
             throw;
+        }
+    }
+
+    public void SentEmail(List<Contact> contacts,Template template)
+    {
+        SmtpClient cliente = new SmtpClient(_messageConfig.URLEmail, _messageConfig.Port)
+        {
+            EnableSsl = true,
+            DeliveryMethod = SmtpDeliveryMethod.Network,
+            UseDefaultCredentials = false,
+            Credentials = new NetworkCredential(_messageConfig.FromEmail, _messageConfig.PasswordEmail)
+        };
+
+        foreach (var contact in contacts)
+        {
+            MailMessage email = new MailMessage(_messageConfig.FromEmail, contact.Mail, template.Subject, template.Body);
+            email.IsBodyHtml = template.IsHtml;
+            cliente.Send(email);
+        }
+
+    }
+
+    public void SentWhatsapp(List<Contact> contacts, Template template)
+    {
+        TwilioClient.Init(_messageConfig.AccountSidWapp, _messageConfig.AuthTokenWapp);
+
+        foreach (var contact in contacts)
+        {
+            var messageOptions = new CreateMessageOptions(
+            new PhoneNumber("whatsapp:" + contact.Phone));
+            messageOptions.From = new PhoneNumber("whatsapp:"+ template.Sender);
+            messageOptions.Body = template.Body;
+            if(template.AttachmentUrl != null && template.AttachmentUrl != string.Empty)
+            {
+                messageOptions.MediaUrl = new List<Uri> { new Uri(template.AttachmentUrl) };
+            }
+            var message = MessageResource.Create(messageOptions);
         }
     }
 }

@@ -3,6 +3,7 @@ using Confluent.Kafka;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using System.Text.Json.Serialization;
+using TaskMessage.Config;
 
 IHostBuilder builder = Host.CreateDefaultBuilder(args)
     .ConfigureServices(services =>
@@ -14,6 +15,7 @@ IHostBuilder builder = Host.CreateDefaultBuilder(args)
                     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                     .Build();
         kafkaConfig.BootstrapServers = configuration.GetValue<string>("Kafka:BootstrapServers");
+        services.Configure<MessageConfig>(configuration.GetSection("MessageConfig"));
         kafkaConfig.AutoOffsetReset = AutoOffsetReset.Earliest;
         kafkaConfig.GroupId = configuration.GetValue<string>("Kafka:GroupId");
 

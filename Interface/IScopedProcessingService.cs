@@ -2,5 +2,5 @@
 
 public interface IScopedProcessingService
 {
-    Task DoWorkAsync(CancellationToken stoppingToken);
+    void DoWorkAsync(CancellationToken stoppingToken);
 }

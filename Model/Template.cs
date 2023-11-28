@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TaskMessage.Enum;
+﻿using TaskMessage.Enum;
 
 namespace TaskMessage.Model
 {
@@ -15,5 +10,6 @@ namespace TaskMessage.Model
         public string Body { get; set; }
         public bool IsHtml { get; set; }
         public string Subject { get; set; }
+        public string AttachmentUrl { get; set; }
     }
 }
