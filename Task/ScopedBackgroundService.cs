@@ -56,12 +56,11 @@ public sealed class DefaultScopedProcessingService : IScopedProcessingService
                 var message = response.Message.Value;
 
                 LogicaNotificacion logicaNotificacion = new LogicaNotificacion(message);
-
+                object obj = JsonConvert.DeserializeObject<object>(logicaNotificacion.notificacion.Object);
                 foreach (Channel i in logicaNotificacion.notificacion.Channels)
                 {
                     if (i == Channel.Email)
                     {
-                        object obj = JsonConvert.DeserializeObject<object>(logicaNotificacion.notificacion.Object);
                         logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Email).Body = RenderString(new Guid().ToString(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Email).Body, obj);
                         SentEmail(logicaNotificacion.notificacion.Contacts.Where(x => x.Mail != string.Empty).ToList(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Email));
                     }
@@ -72,6 +71,8 @@ public sealed class DefaultScopedProcessingService : IScopedProcessingService
                     }
                     if (i == Channel.Whatsapp)
                     {
+                        
+                        logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Whatsapp).Body = RenderString(new Guid().ToString(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Whatsapp).Body, obj);
                         SentWhatsapp(logicaNotificacion.notificacion.Contacts.Where(x => x.Phone != string.Empty).ToList(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Whatsapp));
                     }
                 }
@@ -128,19 +129,37 @@ public sealed class DefaultScopedProcessingService : IScopedProcessingService
 
     public void SentWhatsapp(List<Contact> contacts, Template template)
     {
-        TwilioClient.Init(_messageConfig.AccountSidWapp, _messageConfig.AuthTokenWapp);
-
-        foreach (var contact in contacts)
+        try
         {
-            var messageOptions = new CreateMessageOptions(
-            new PhoneNumber("whatsapp:" + contact.Phone));
-            messageOptions.From = new PhoneNumber("whatsapp:"+ template.Sender);
-            messageOptions.Body = template.Body;
-            if(template.AttachmentUrl != null && template.AttachmentUrl != string.Empty)
+            TwilioClient.Init(_messageConfig.AccountSidWapp, _messageConfig.AuthTokenWapp);
+
+            foreach (var contact in contacts)
             {
-                messageOptions.MediaUrl = new List<Uri> { new Uri(template.AttachmentUrl) };
+                var messageOptions = new CreateMessageOptions(
+                new PhoneNumber("whatsapp:" + contact.Phone));
+                messageOptions.From = new PhoneNumber("whatsapp:" + template.Sender);
+                messageOptions.Body = template.Body;
+                var message = MessageResource.Create(messageOptions);
+
+                if (template.Attachments != null && template.Attachments != string.Empty)
+                {
+                    foreach (var item in template.Attachments.Split("***").ToList())
+                    {
+                        messageOptions.MediaUrl = new List<Uri>();
+                        if (item.Contains(".jpg"))
+                        {
+                            messageOptions.Body = "";
+                            messageOptions.MediaUrl.Add(new Uri(item));
+                        }
+                        messageOptions.MediaUrl.Add(new Uri(item));
+                        message = MessageResource.Create(messageOptions);
+                    }
+                }
             }
-            var message = MessageResource.Create(messageOptions);
+        }
+        catch (Exception ex)
+        {
+
         }
     }
 }
