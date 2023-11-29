@@ -1,25 +1,18 @@
 ﻿namespace App.ScopedService;
 using Confluent.Kafka;
-using System.Threading.Channels;
 using TaskMessage.Logic;
-using static Confluent.Kafka.ConfigPropertyNames;
-using TaskMessage.Enum;
 using Channel = TaskMessage.Enum.Channel;
-using SMS=TaskMessage.Logic.SMS;
 using Newtonsoft.Json;
 using RazorEngineNetCore = RazorEngine;
 using RazorEngine.Templating;
-using Newtonsoft.Json.Linq;
 using TaskMessage.Config;
 using Microsoft.Extensions.Options;
 using System.Net.Mail;
 using System.Net;
-using Twilio.Http;
 using Twilio.Types;
 using Twilio;
 using TaskMessage.Model;
 using Twilio.Rest.Api.V2010.Account;
-using Twilio.TwiML.Voice;
 
 public sealed class DefaultScopedProcessingService : IScopedProcessingService
 {
@@ -61,18 +54,17 @@ public sealed class DefaultScopedProcessingService : IScopedProcessingService
                 {
                     if (i == Channel.Email)
                     {
-                        logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Email).Body = RenderString(new Guid().ToString(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Email).Body, obj);
+                        logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Email).Body = RenderString(Guid.NewGuid().ToString(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Email).Body, obj);
                         SentEmail(logicaNotificacion.notificacion.Contacts.Where(x => x.Mail != string.Empty).ToList(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Email));
                     }
                     if (i == Channel.SMS)
                     {
-                        SMS sMS = new SMS();
-                        sMS.EnviarMensaje(logicaNotificacion.notificacion.Contacts[0].Phone + "", logicaNotificacion.notificacion.Templates[0].Body.ToString());
+                        logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.SMS).Body = RenderString(Guid.NewGuid().ToString(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.SMS).Body, obj);
+                        SentSMS(logicaNotificacion.notificacion.Contacts.Where(x => x.Phone != string.Empty).ToList(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.SMS));
                     }
                     if (i == Channel.Whatsapp)
                     {
-                        
-                        logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Whatsapp).Body = RenderString(new Guid().ToString(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Whatsapp).Body, obj);
+                        logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Whatsapp).Body = RenderString(Guid.NewGuid().ToString(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Whatsapp).Body, obj);
                         SentWhatsapp(logicaNotificacion.notificacion.Contacts.Where(x => x.Phone != string.Empty).ToList(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Whatsapp));
                     }
                 }
@@ -158,6 +150,43 @@ public sealed class DefaultScopedProcessingService : IScopedProcessingService
             }
         }
         catch (Exception ex)
+        {
+
+        }
+    }
+
+    public void SentSMS(List<Contact> contacts, Template template)
+    {
+        try
+        {
+            TwilioClient.Init(_messageConfig.AccountSidSMS, _messageConfig.AuthTokenSMS);
+
+            foreach (var contact in contacts)
+            {
+                var messageOptions = new CreateMessageOptions(
+                new PhoneNumber(contact.Phone));
+                messageOptions.From = new PhoneNumber(template.Sender);
+                messageOptions.Body = template.Body;
+
+                var message = MessageResource.Create(messageOptions);
+
+                if (template.Attachments != null && template.Attachments != string.Empty)
+                {
+                    foreach (var item in template.Attachments.Split("***").ToList())
+                    {
+                        messageOptions.MediaUrl = new List<Uri>();
+                        if (item.Contains(".jpg"))
+                        {
+                            messageOptions.Body = "";
+                            messageOptions.MediaUrl.Add(new Uri(item));
+                        }
+                        messageOptions.MediaUrl.Add(new Uri(item));
+                        message = MessageResource.Create(messageOptions);
+                    }
+                }
+            }
+        }
+        catch(Exception ex)
         {
 
         }
