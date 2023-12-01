@@ -96,7 +96,7 @@ public sealed class DefaultScopedProcessingService : IScopedProcessingService
         catch (Exception ex)
         {
             _logger.LogError(ex, $"Render item with key {key} error");
-            throw;
+            return "";
         }
     }
 
