@@ -20,10 +20,9 @@ namespace TaskMessage.Logic
             notificacion = new Notification();
             notificacion.IsProgrammed = _notificacion.IsProgrammed;
             notificacion.ProgrammingInfo = _notificacion.ProgrammingInfo;
-            notificacion.Channels = _notificacion.Channels;
             notificacion.Contacts= _notificacion.Contacts;
             notificacion.Templates = _notificacion.Templates;
-            notificacion.Object = _notificacion.Object;
+            notificacion.ObjectTemplate = _notificacion.ObjectTemplate;
             return notificacion;
         }
 

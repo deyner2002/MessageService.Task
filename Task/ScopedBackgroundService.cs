@@ -46,27 +46,34 @@ public sealed class DefaultScopedProcessingService : IScopedProcessingService
             var response = _kafkaConsumer.Consume(token.Token);
             if (response.Message != null)
             {
-                var message = response.Message.Value;
-
-                LogicaNotificacion logicaNotificacion = new LogicaNotificacion(message);
-                object obj = JsonConvert.DeserializeObject<object>(logicaNotificacion.notificacion.Object);
-                foreach (Channel i in logicaNotificacion.notificacion.Channels)
+                try
                 {
-                    if (i == Channel.Email)
+                    var message = response.Message.Value;
+
+                    LogicaNotificacion logicaNotificacion = new LogicaNotificacion(message);
+                    object obj = JsonConvert.DeserializeObject<object>(logicaNotificacion.notificacion.ObjectTemplate);
+                    foreach (Template template in logicaNotificacion.notificacion.Templates)
                     {
-                        logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Email).Body = RenderString(Guid.NewGuid().ToString(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Email).Body, obj);
-                        SentEmail(logicaNotificacion.notificacion.Contacts.Where(x => x.Mail != string.Empty).ToList(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Email));
+                        if (template.Channel == Channel.Email)
+                        {
+                            logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Email).Body = RenderString(Guid.NewGuid().ToString(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Email).Body, obj);
+                            SentEmail(logicaNotificacion.notificacion.Contacts.Where(x => x.Mail != string.Empty).ToList(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Email));
+                        }
+                        if (template.Channel == Channel.SMS)
+                        {
+                            logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.SMS).Body = RenderString(Guid.NewGuid().ToString(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.SMS).Body, obj);
+                            SentSMS(logicaNotificacion.notificacion.Contacts.Where(x => x.Phone != string.Empty).ToList(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.SMS));
+                        }
+                        if (template.Channel == Channel.Whatsapp)
+                        {
+                            logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Whatsapp).Body = RenderString(Guid.NewGuid().ToString(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Whatsapp).Body, obj);
+                            SentWhatsapp(logicaNotificacion.notificacion.Contacts.Where(x => x.Phone != string.Empty).ToList(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Whatsapp));
+                        }
                     }
-                    if (i == Channel.SMS)
-                    {
-                        logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.SMS).Body = RenderString(Guid.NewGuid().ToString(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.SMS).Body, obj);
-                        SentSMS(logicaNotificacion.notificacion.Contacts.Where(x => x.Phone != string.Empty).ToList(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.SMS));
-                    }
-                    if (i == Channel.Whatsapp)
-                    {
-                        logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Whatsapp).Body = RenderString(Guid.NewGuid().ToString(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Whatsapp).Body, obj);
-                        SentWhatsapp(logicaNotificacion.notificacion.Contacts.Where(x => x.Phone != string.Empty).ToList(), logicaNotificacion.notificacion.Templates.FirstOrDefault(x => x.Channel == Channel.Whatsapp));
-                    }
+                }
+                catch (Exception ex)
+                {
+
                 }
             }
         }
